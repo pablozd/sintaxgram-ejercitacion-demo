@@ -44,7 +44,7 @@ body {
   font: 16px/1.5 var(--sans);
 }
 .wrap {
-  max-width: 920px; margin: 0 auto;
+  max-width: 1280px; margin: 0 auto;
   padding-block: 24px 64px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -66,29 +66,59 @@ h2 { font-size: 1.15rem; }
 .autores { font-size: .9rem; color: var(--muted); }
 .progress { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; }
 
-/* navegación */
-.ex { display: grid; gap: 8px; }
-.ex-title { font-weight: 600; font-size: .9rem; }
-.items { display: flex; flex-wrap: wrap; gap: 6px; }
-.items button {
-  font: 600 .85rem var(--mono); min-width: 44px; padding: 6px 10px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px;
+/* paño lateral: guías y ejercicios desplegables */
+.layout { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.side {
+  position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto;
+  display: grid; gap: 6px; padding-right: 4px; overscroll-behavior: contain;
 }
+.side details { border-radius: 6px; }
+.side summary {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  cursor: pointer; list-style: none; padding: 8px 10px; border-radius: 6px;
+}
+.side summary::-webkit-details-marker { display: none; }
+.side summary::before {
+  content: ""; flex: none; width: 6px; height: 6px; margin: .45em 2px 0 0; align-self: flex-start;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg);
+  transition: transform .15s ease;
+}
+.side details[open] > summary::before { transform: rotate(45deg); }
+.side summary:hover { background: var(--code-bg); }
+.side summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.side .g { border: 1px solid var(--line); background: var(--surface); }
+.side .g > summary { font: 600 .95rem var(--sans); }
+.side .g.actual > summary { color: var(--accent); }
+.side .g-t, .side .e-t { flex: 1; min-width: 0; }
+.side .cnt { font: 500 .72rem var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.side .exs { display: grid; gap: 2px; padding: 0 6px 8px 14px; }
+.side .e > summary { font-size: .85rem; padding: 6px 8px; }
+.side .e.actual > summary { font-weight: 600; }
+.items { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 8px 10px 22px; }
+.items button {
+  font: 600 .78rem var(--mono); min-width: 34px; padding: 4px 6px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.items button:hover { border-color: var(--accent); }
 .items button[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
 .items button.ok { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); }
 .items button.partial { background: color-mix(in srgb, var(--warn) 16%, var(--surface)); }
 .items button.bad { background: color-mix(in srgb, var(--bad) 12%, var(--surface)); }
-nav { display: grid; gap: 14px; }
-
-/* pestañas de temas (artefacto con varias guías) */
-.guias { display: flex; flex-wrap: wrap; gap: 6px; }
-.guias button {
-  display: inline-flex; align-items: baseline; gap: 8px; cursor: pointer;
-  font: 600 .88rem var(--sans); padding: 7px 12px; border-radius: 6px;
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+.side-toggle { display: none; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .side { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  /* en pantallas angostas el índice se pliega en un botón para no empujar el ejercicio hacia abajo */
+  .side-toggle {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px; width: 100%;
+    font: 600 .9rem var(--sans); text-align: left; cursor: pointer; padding: 10px 12px; border-radius: 6px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .side-toggle .cnt { font-weight: 500; }
+  .side:not(.abierto) > details { display: none; }
 }
-.guias button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.guias .g-p { font: 500 .75rem var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .side summary::before { transition: none; } }
 
 /* ítem */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
@@ -1298,8 +1328,7 @@ window.SG_DATA = {"id": "gramB-ejercitacion", "titulo": "Gramática B · Ejercit
         (D.autores && D.autores.length ? '<span class="autores">' + esc(listar(D.autores)) + '</span>' : '') +
         '<span class="progress">' + t.done + ' de ' + items.length + ' oraciones corregidas · puntaje ' + Math.round(t.score * 100) + '/100</span>' +
       '</header>' +
-      (GUIAS.length > 1 ? guiasHTML(x.gi) : '') +
-      '<nav aria-label="Oraciones">' + navHTML(x.gi) + '</nav>' +
+      '<div class="layout">' + sideHTML(x) +
       '<section class="card" aria-labelledby="titulo-item">' +
         '<div class="eyebrow" id="titulo-item">' + (GUIAS.length > 1 ? esc(x.g.titulo) + ' · ' : '') + esc(ex.titulo) + '</div>' +
         '<p class="consigna">' + esc(ex.consigna) + '</p>' +
@@ -1318,11 +1347,24 @@ window.SG_DATA = {"id": "gramB-ejercitacion", "titulo": "Gramática B · Ejercit
           '<span class="toast" id="toast" role="status"></span>' +
         '</div>' +
         '<div id="resultado"></div>' +
-      '</section>';
+      '</section></div>';
 
-    document.querySelectorAll('.items button, .guias button').forEach(function (b) {
-      b.addEventListener('click', function () { cur = +b.dataset.i; showAll = false; render(); });
+    document.querySelectorAll('.side .items button').forEach(function (b) {
+      b.addEventListener('click', function () { cur = +b.dataset.i; showAll = false; indiceMovil = false; render(); });
     });
+    $('.side-toggle').addEventListener('click', function () {
+      indiceMovil = !indiceMovil;
+      $('.side').classList.toggle('abierto', indiceMovil);
+      this.setAttribute('aria-expanded', indiceMovil);
+      this.querySelector('.cnt').textContent = indiceMovil ? 'cerrar' : 'cambiar';
+    });
+    document.querySelectorAll('.side details').forEach(function (dt) {
+      dt.addEventListener('toggle', function () { abiertos[dt.dataset.k] = dt.open; });
+    });
+    var activo = document.querySelector('.side .items button[aria-current="true"]');
+    if (activo && activo.scrollIntoView && window.matchMedia && window.matchMedia('(min-width: 861px)').matches) {
+      activo.scrollIntoView({ block: 'nearest' });
+    }
     $('#corregir').addEventListener('click', corregir);
     if (saved.n) {
       var el = it.pregunta ? qFromIdx(it.pregunta, saved.q) : [];
@@ -1346,34 +1388,39 @@ window.SG_DATA = {"id": "gramB-ejercitacion", "titulo": "Gramática B · Ejercit
     });
   }
 
-  // Pestañas de temas: cada una lleva a la última oración abierta de ese tema (o a la primera).
-  function guiasHTML(actual) {
-    return '<div class="guias" role="tablist" aria-label="Temas">' + GUIAS.map(function (g, gi) {
-      var idx = items.map(function (x, i) { return x.gi === gi ? i : -1; }).filter(function (i) { return i >= 0; });
-      var hechas = idx.filter(function (i) { var r = state.r[items[i].it.id]; return r && r.n; }).length;
-      var destino = idx[0];
-      if (state.u && state.u[gi] != null && idx.indexOf(state.u[gi]) >= 0) destino = state.u[gi];
-      return '<button role="tab" data-i="' + destino + '" aria-selected="' + (gi === actual) + '">' +
-        '<span class="g-t">' + esc(g.titulo) + '</span><span class="g-p">' + hechas + '/' + idx.length + '</span></button>';
-    }).join('') + '</div>';
-  }
-
-  function navHTML(gi) {
-    var html = '', i = 0;
-    (state.u = state.u || {})[gi] = cur;
-    GUIAS.forEach(function (g, k) { if (k === gi) return; g.ejercicios.forEach(function (ex) { if (k < gi) i += ex.items.length; }); });
-    GUIAS[gi].ejercicios.forEach(function (ex) {
-      html += '<div class="ex"><span class="ex-title">' + esc(ex.titulo) + '</span><div class="items">';
-      ex.items.forEach(function (it) {
-        var r = state.r[it.id], cls = '';
-        if (r && r.s != null) cls = r.s >= 0.999 ? 'ok' : (r.s >= 0.6 ? 'partial' : 'bad');
-        html += '<button class="' + cls + '" data-i="' + i + '"' + (i === cur ? ' aria-current="true"' : '') +
-          ' title="' + esc(it.oracion) + '">(' + it.num + ')</button>';
-        i++;
-      });
-      html += '</div></div>';
-    });
-    return html;
+  // Paño lateral: una sección desplegable por guía y, adentro, una por ejercicio con sus oraciones.
+  // Lo desplegado se recuerda mientras dura la sesión; la guía y el ejercicio actuales se abren solos.
+  var abiertos = {}, indiceMovil = false;
+  function hechasDe(list) { return list.filter(function (it) { var r = state.r[it.id]; return r && r.n; }).length; }
+  function sideHTML(x) {
+    var i = 0;
+    abiertos['g' + x.gi] = true;
+    abiertos['e' + x.gi + '-' + x.g.ejercicios.indexOf(x.ex)] = true;
+    var donde = (GUIAS.length > 1 ? x.g.titulo + ' · ' : '') + x.ex.titulo.replace(/^Ejercicio (\d+)\..*$/, 'Ej. $1') + ' · (' + x.it.num + ')';
+    return '<aside class="side' + (indiceMovil ? ' abierto' : '') + '" aria-label="Guías y ejercicios">' +
+      '<button type="button" class="side-toggle" aria-expanded="' + indiceMovil + '"><span>' + esc(donde) + '</span>' +
+      '<span class="cnt">' + (indiceMovil ? 'cerrar' : 'cambiar') + '</span></button>' + GUIAS.map(function (g, gi) {
+      var todos = [];
+      g.ejercicios.forEach(function (ex) { todos = todos.concat(ex.items); });
+      var exs = g.ejercicios.map(function (ex, ei) {
+        var k = 'e' + gi + '-' + ei;
+        var chips = ex.items.map(function (it) {
+          var r = state.r[it.id], cls = '';
+          if (r && r.s != null) cls = r.s >= 0.999 ? 'ok' : (r.s >= 0.6 ? 'partial' : 'bad');
+          var h = '<button class="' + cls + '" data-i="' + i + '"' + (i === cur ? ' aria-current="true"' : '') +
+            ' title="' + esc(it.oracion) + '">' + it.num + '</button>';
+          i++;
+          return h;
+        }).join('');
+        return '<details class="e' + (ex === x.ex ? ' actual' : '') + '" data-k="' + k + '"' + (abiertos[k] ? ' open' : '') + '>' +
+          '<summary><span class="e-t">' + esc(ex.titulo) + '</span><span class="cnt">' + hechasDe(ex.items) + '/' + ex.items.length + '</span></summary>' +
+          '<div class="items">' + chips + '</div></details>';
+      }).join('');
+      var kg = 'g' + gi;
+      return '<details class="g' + (gi === x.gi ? ' actual' : '') + '" data-k="' + kg + '"' + (abiertos[kg] ? ' open' : '') + '>' +
+        '<summary><span class="g-t">' + esc(g.titulo) + '</span><span class="cnt g-p">' + hechasDe(todos) + '/' + todos.length + '</span></summary>' +
+        '<div class="exs">' + exs + '</div></details>';
+    }).join('') + '</aside>';
   }
 
   function toolbarHTML() {
