@@ -207,6 +207,7 @@ legend { font-weight: 600; font-size: .9rem; padding: 0 4px; }
 
 /* etiqueta simple: rótulo bajo la palabra */
 .c.tag > .lab { margin-top: 1px; }
+.c.tag.multi > .body { border-bottom: 1.5px solid var(--ink); padding-bottom: 1px; }
 
 /* corchetes con etiqueta al costado: [ … ]OS */
 .c.sqc { display: inline-flex; flex-direction: row; align-items: flex-start; gap: .3em; }
@@ -1193,7 +1194,9 @@ window.SG_DATA = {"id": "gramB-ejercitacion", "titulo": "Gramática B · Ejercit
     var body = '<span class="body">' + renderChildren(n.children) + '</span>';
     if (isSup(n)) return '<span class="c sup' + cont + '"' + off(k) + '>' + lab + '<span class="brk"></span>' + body + '</span>';
     var st = n.star ? ' style="--d:' + depth(n) + (k ? ';margin-top:calc(var(--head) * ' + k + ')' : '') + '"' : off(k);
-    return '<span class="c ' + (n.star ? 'box' : 'tag') + cont + '"' + st + '>' + body + lab + '</span>';
+    // Etiqueta simple sobre varias palabras (p. ej. N de una perífrasis): se subraya todo el tramo.
+    var multi = !n.star && n.children.filter(function (c) { return c.tok !== undefined && !c.isNull; }).length > 1 ? ' multi' : '';
+    return '<span class="c ' + (n.star ? 'box' : 'tag') + multi + cont + '"' + st + '>' + body + lab + '</span>';
   }
   // Parte el árbol en los saltos de línea: un constituyente cortado aparece en cada línea
   // abierto del lado del corte (sin pata).
