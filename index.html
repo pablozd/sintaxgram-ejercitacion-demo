@@ -603,6 +603,8 @@ window.SG_DATA = {"id": "gramB-ejercitacion", "titulo": "Gramática B · Ejercit
       }
       return false;
     }
+    // Un solo constituyente que cubre justo el tramo (p. ej. OD*{quiénes vienen}): se injerta adentro.
+    if (i === j && arr[i].tok === undefined) return injertar(arr[i].children, s, e, nuevo, s);
     arr.splice.apply(arr, [i, j - i + 1].concat(nuevo));
     return true;
   }
@@ -1149,53 +1151,15 @@ window.SG_DATA = {"id": "gramB-ejercitacion", "titulo": "Gramática B · Ejercit
 
 ;
 /*
- * app.js — interfaz de ejercitación. Lee window.SG_DATA (lo inyecta build.py).
- * Depende de SGParser, SGLabels, SGCompare y SGLMS.
+ * preview.js — dibujo aproximado del análisis al estilo de sintaxgram (HTML + CSS).
+ * Lo usan la interfaz de ejercitación y el solucionario. Depende de SGParser y SGLabels.
  */
-(function () {
+(function (root) {
   'use strict';
-
-  var D = window.SG_DATA;
-  var P = window.SGParser, L = window.SGLabels, C = window.SGCompare, LMS = window.SGLMS;
-  var $ = function (s, el) { return (el || document).querySelector(s); };
-
-  // Barra de etiquetas por grupos. Con * = caja abierta; sin * = etiqueta debajo (núcleos, clíticos, nexos).
-  // Muestra el inventario completo, no sólo lo que usa la guía: filtrar adelantaría la respuesta.
-  var TOOLBAR = [
-    { g: 'Oración', l: ['SES', 'SEC', 'ST', 'PVS', 'PVC', 'OS', 'OC'] },
-    { g: 'Núcleos y nexos', l: ['N', 'MD', 'MG', 'MF', 'Incl', 'NC'] },
-    { g: 'Argumentos', l: ['OD*', 'OI*', 'CREG*', 'CAg*', 'CL*', 'CM*'] },
-    { g: 'Clíticos', l: ['OD', 'OI'] },
-    { g: 'Predicativos', l: ['PSO*', 'PSNO*', 'POO*', 'PONO*'] },
-    { g: 'Modificadores', l: ['MD*', 'MI*', 'COMP*', 'Ap*', 'MG*'] },
-    { g: 'Circunstanciales', l: ['ACT*', 'ACL*', 'ACM*', 'ACC*', 'ACFin*', 'ACI*', 'ACCant*', 'ACCOMP*', 'ACCOND*', 'ACNEG*'] },
-    { g: 'Periféricos', l: ['VOC*', 'MOR*'] }
-  ];
-  var MAX_VISIBLES = 3;
-
-  // Un paquete puede traer una guía (ejercicios) o varias (guias[], el artefacto con todos los temas).
-  var GUIAS = D.guias || [D];
-  var items = [];
-  GUIAS.forEach(function (g, gi) {
-    g.ejercicios.forEach(function (ex) {
-      ex.items.forEach(function (it) { items.push({ g: g, gi: gi, ex: ex, it: it }); });
-    });
-  });
-  function cfg(g, k, def) { return g[k] != null ? g[k] : (D[k] != null ? D[k] : def); }
-
-  var std = LMS.init(D.id);
-  var state = LMS.loadState() || { v: 1, r: {} };
-  var cur = 0;
-  // Volver a la última oración abierta (state.p guarda su id).
-  if (state.p) items.forEach(function (x, i) { if (x.it.id === state.p) cur = i; });
-  var showAll = false;
-
-  function listar(a) { return a.length > 1 ? a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1] : a.join(''); }
+  var P = root.SGParser, L = root.SGLabels;
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
   }
-
-  // ---------- vista previa ----------
   var SUP = L.NIVEL.superior;
   // Imita el dibujo de sintaxgram: etiquetas superiores arriba con corchete de patas cortas,
   // una línea por cada nivel de inclusión; cajas abiertas por debajo de las palabras con la
@@ -1259,6 +1223,61 @@ window.SG_DATA = {"id": "gramB-ejercitacion", "titulo": "Gramática B · Ejercit
       return '<p class="err">' + esc(e.message) + '</p>';
     }
   }
+
+  root.SGPreview = { renderPreview: renderPreview };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+/*
+ * app.js — interfaz de ejercitación. Lee window.SG_DATA (lo inyecta build.py).
+ * Depende de SGParser, SGLabels, SGCompare y SGLMS.
+ */
+(function () {
+  'use strict';
+
+  var D = window.SG_DATA;
+  var P = window.SGParser, L = window.SGLabels, C = window.SGCompare, LMS = window.SGLMS;
+  var $ = function (s, el) { return (el || document).querySelector(s); };
+
+  // Barra de etiquetas por grupos. Con * = caja abierta; sin * = etiqueta debajo (núcleos, clíticos, nexos).
+  // Muestra el inventario completo, no sólo lo que usa la guía: filtrar adelantaría la respuesta.
+  var TOOLBAR = [
+    { g: 'Oración', l: ['SES', 'SEC', 'ST', 'PVS', 'PVC', 'OS', 'OC'] },
+    { g: 'Núcleos y nexos', l: ['N', 'MD', 'MG', 'MF', 'Incl', 'NC'] },
+    { g: 'Argumentos', l: ['OD*', 'OI*', 'CREG*', 'CAg*', 'CL*', 'CM*'] },
+    { g: 'Clíticos', l: ['OD', 'OI'] },
+    { g: 'Predicativos', l: ['PSO*', 'PSNO*', 'POO*', 'PONO*'] },
+    { g: 'Modificadores', l: ['MD*', 'MI*', 'COMP*', 'Ap*', 'MG*'] },
+    { g: 'Circunstanciales', l: ['ACT*', 'ACL*', 'ACM*', 'ACC*', 'ACFin*', 'ACI*', 'ACCant*', 'ACCOMP*', 'ACCOND*', 'ACNEG*'] },
+    { g: 'Periféricos', l: ['VOC*', 'MOR*'] }
+  ];
+  var MAX_VISIBLES = 3;
+
+  // Un paquete puede traer una guía (ejercicios) o varias (guias[], el artefacto con todos los temas).
+  var GUIAS = D.guias || [D];
+  var items = [];
+  GUIAS.forEach(function (g, gi) {
+    g.ejercicios.forEach(function (ex) {
+      ex.items.forEach(function (it) { items.push({ g: g, gi: gi, ex: ex, it: it }); });
+    });
+  });
+  function cfg(g, k, def) { return g[k] != null ? g[k] : (D[k] != null ? D[k] : def); }
+
+  var std = LMS.init(D.id);
+  var state = LMS.loadState() || { v: 1, r: {} };
+  var cur = 0;
+  // Volver a la última oración abierta (state.p guarda su id).
+  if (state.p) items.forEach(function (x, i) { if (x.it.id === state.p) cur = i; });
+  var showAll = false;
+
+  function listar(a) { return a.length > 1 ? a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1] : a.join(''); }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+
+  // ---------- vista previa (src/ui/preview.js) ----------
+  var renderPreview = window.SGPreview.renderPreview;
+  var SUP = L.NIVEL.superior;
 
   // ---------- puntaje global ----------
   function itemScore(id) { var r = state.r[id]; return r && r.n ? r.s : 0; }
